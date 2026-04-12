@@ -1,0 +1,199 @@
+# Search Angel - Production Docker Compose
+# Runs alongside existing Traefik/wsm stack
+# Access: API at :8080, Frontend at :3080
+services:
+  # ── FastAPI Backend ────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8000"
+    env_file:
+      - .env
+    environment:
+      - SEARCH_ANGEL_ENVIRONMENT=production
+      - SEARCH_ANGEL_DEBUG=true
+      - SEARCH_ANGEL_PG_HOST=sa-postgres
+      - SEARCH_ANGEL_OS_HOST=sa-opensearch
+      - SEARCH_ANGEL_OS_VERIFY_CERTS=false
+      - SEARCH_ANGEL_WEB_SEARCH_ENABLED=true
+      - SEARCH_ANGEL_SEARXNG_URL=http://sa-searxng:8080
+    depends_on:
+      sa-postgres:
+        condition: service_healthy
+      sa-opensearch:
+        condition: service_healthy
+      sa-searxng:
+        condition: service_started
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - sa-internal
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # ── Next.js Frontend ───────────────────────────────────────────────
+  web:
+    build:
+      context: ../search_angel_web
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://YOUR_SERVER_IP:8080
+    restart: unless-stopped
+    ports:
+      - "3080:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://YOUR_SERVER_IP:8080
+    depends_on:
+      - app
+    networks:
+      - sa-internal
+
+  # ── PostgreSQL + pgvector ──────────────────────────────────────────
+  sa-postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: search_angel
+      POSTGRES_PASSWORD: ${PG_PASSWORD:?Set PG_PASSWORD in .env}
+      POSTGRES_DB: search_angel
+    volumes:
+      - sa_pgdata:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U search_angel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sa-internal
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ── OpenSearch ─────────────────────────────────────────────────────
+  sa-opensearch:
+    image: opensearchproject/opensearch:2.12.0
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${OS_PASSWORD:?Set OS_PASSWORD in .env}
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - plugins.security.disabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - sa_osdata:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200 | grep -q cluster_name"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 45s
+    networks:
+      - sa-internal
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ── SearXNG (Self-hosted meta search - privacy-first) ────────────────
+  sa-searxng:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    environment:
+      - SEARXNG_BASE_URL=http://sa-searxng:8888/
+    volumes:
+      - ./searxng:/etc/searxng
+    networks:
+      - sa-internal
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ── Tor SOCKS5 Proxy (privacy routing) ──────────────────────────────
+  sa-tor:
+    image: dperson/torproxy:latest
+    restart: unless-stopped
+    ports:
+      - "9050:9050"
+    environment:
+      - TOR_NewCircuitPeriod=120
+      - TOR_MaxCircuitDirtiness=600
+    networks:
+      - sa-internal
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ── SearXNG Tor instance (routes through Tor) ──────────────────────
+  sa-searxng-tor:
+    image: searxng/searxng:latest
+    restart: unless-stopped
+    environment:
+      - SEARXNG_BASE_URL=http://sa-searxng-tor:8888/
+    volumes:
+      - ./searxng-tor:/etc/searxng
+    depends_on:
+      - sa-tor
+    networks:
+      - sa-internal
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ── Nginx (domain routing for sa.atlasiant.com) ─────────────────────
+  sa-nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "8880:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - app
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=wsm"
+      - "traefik.http.routers.searchangel.rule=Host(`sa.atlasiant.com`)"
+      - "traefik.http.routers.searchangel.entrypoints=websecure"
+      - "traefik.http.routers.searchangel.tls=true"
+      - "traefik.http.routers.searchangel.tls.certresolver=le"
+      - "traefik.http.services.searchangel.loadbalancer.server.port=80"
+      - "traefik.http.routers.searchangel-http.rule=Host(`sa.atlasiant.com`)"
+      - "traefik.http.routers.searchangel-http.entrypoints=web"
+    networks:
+      - sa-internal
+      - wsm
+
+networks:
+  sa-internal:
+    driver: bridge
+  wsm:
+    external: true
+
+volumes:
+  sa_pgdata:
+  sa_osdata:

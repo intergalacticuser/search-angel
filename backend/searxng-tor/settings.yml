@@ -1,0 +1,289 @@
+use_default_settings: true
+
+general:
+  instance_name: "Search Angel SearXNG"
+  privacypolicy_url: false
+  contact_url: false
+  enable_metrics: false
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en"
+  formats:
+    - html
+    - json
+
+server:
+  port: 8888
+  bind_address: "0.0.0.0"
+  secret_key: "sa_searxng_secret_2025_change_me"
+  limiter: false
+  public_instance: false
+
+ui:
+  static_use_hash: true
+  default_theme: simple
+  theme_args:
+    simple_style: dark
+
+outgoing:
+  request_timeout: 15.0
+  max_request_timeout: 30.0
+  useragent_suffix: ""
+  pool_connections: 50
+  pool_maxsize: 10
+  # ALL requests routed through Tor for maximum anonymity
+  proxies:
+    all://:
+      - socks5h://sa-tor:9050
+
+engines:
+  # ════════════════════════════════════════════════════════════
+  # PRIVACY-FIRST ENGINES ONLY
+  # Google and Bing are DISABLED - they log all queries
+  # We only use engines that do NOT log search queries
+  # ════════════════════════════════════════════════════════════
+
+  # ── Google/Bing DISABLED (they log queries) ────────────────
+  - name: google
+    engine: google
+    shortcut: go
+    disabled: true   # LOGS QUERIES - disabled for privacy
+
+  - name: bing
+    engine: bing
+    shortcut: bi
+    disabled: true   # LOGS QUERIES - disabled for privacy
+
+  # ── Privacy-First General Search ───────────────────────────
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    disabled: false
+    # DDG does not log queries or track users
+
+  - name: brave
+    engine: brave
+    shortcut: br
+    disabled: false
+    # Brave Search: independent index, no query logging
+
+  - name: qwant
+    engine: qwant
+    shortcut: qw
+    disabled: false
+    # Qwant: EU-based, minimal logging, GDPR compliant
+
+  - name: startpage
+    engine: startpage
+    shortcut: sp
+    disabled: false
+    # Startpage: proxies Google results WITHOUT logging queries
+
+  - name: mojeek
+    engine: mojeek
+    shortcut: mj
+    disabled: false
+    # Mojeek: own independent index, no tracking, UK-based
+
+  - name: yahoo
+    engine: yahoo
+    shortcut: yh
+    disabled: true   # Logs queries - disabled
+
+  # ── Video Search (privacy-respecting) ──────────────────────
+  - name: duckduckgo videos
+    engine: duckduckgo_extra
+    shortcut: ddv
+    disabled: false
+    categories: videos
+    ddg_category: videos
+
+  - name: youtube
+    engine: youtube_noapi
+    shortcut: yt
+    disabled: false
+    # YouTube: no API key, scrapes results
+
+  - name: dailymotion
+    engine: dailymotion
+    shortcut: dm
+    disabled: false
+
+  - name: vimeo
+    engine: vimeo
+    shortcut: vm
+    disabled: false
+
+  - name: piped
+    engine: piped
+    shortcut: ppd
+    disabled: false
+    # Piped: privacy-friendly YouTube frontend
+
+  - name: peertube
+    engine: peertube
+    shortcut: pt
+    disabled: false
+    # PeerTube: decentralized video platform
+
+  # ── Google/Bing Videos DISABLED ────────────────────────────
+  - name: google videos
+    engine: google_videos
+    shortcut: gov
+    disabled: true   # LOGS QUERIES
+
+  - name: bing videos
+    engine: bing_videos
+    shortcut: biv
+    disabled: true   # LOGS QUERIES
+
+  # ── Image Search (privacy-respecting) ──────────────────────
+  - name: duckduckgo images
+    engine: duckduckgo_extra
+    shortcut: ddi
+    disabled: false
+    categories: images
+    ddg_category: images
+
+  - name: unsplash
+    engine: unsplash
+    shortcut: us
+    disabled: false
+
+  - name: flickr
+    engine: flickr
+    shortcut: fl
+    disabled: false
+
+  - name: deviantart
+    engine: deviantart
+    shortcut: da
+    disabled: false
+
+  # ── Google/Bing Images DISABLED ────────────────────────────
+  - name: google images
+    engine: google_images
+    shortcut: goi
+    disabled: true   # LOGS QUERIES
+
+  - name: bing images
+    engine: bing_images
+    shortcut: bii
+    disabled: true   # LOGS QUERIES
+
+  # ── News Search (privacy-respecting) ───────────────────────
+  - name: duckduckgo news
+    engine: duckduckgo_extra
+    shortcut: ddn
+    disabled: false
+    categories: news
+    ddg_category: news
+
+  # ── Google/Bing News DISABLED ──────────────────────────────
+  - name: google news
+    engine: google_news
+    shortcut: gn
+    disabled: true   # LOGS QUERIES
+
+  - name: bing news
+    engine: bing_news
+    shortcut: bin
+    disabled: true   # LOGS QUERIES
+
+  # ── Science / Academic ─────────────────────────────────────
+  - name: arxiv
+    engine: arxiv
+    shortcut: ax
+    disabled: false
+    categories: science
+    # arXiv: open access, no tracking
+
+  - name: pubmed
+    engine: pubmed
+    shortcut: pm
+    disabled: false
+    categories: science
+
+  - name: semantic scholar
+    engine: semantic_scholar
+    shortcut: ss
+    disabled: false
+    categories: science
+
+  - name: crossref
+    engine: crossref
+    shortcut: cr
+    disabled: false
+    categories: science
+
+  - name: google scholar
+    engine: google_scholar
+    shortcut: gs
+    disabled: true   # Google logs queries
+
+  # ── Wiki / Reference ───────────────────────────────────────
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    disabled: false
+    # Wikipedia: open, no tracking
+
+  - name: wikidata
+    engine: wikidata
+    shortcut: wd
+    disabled: false
+
+  # ── IT / Developer ─────────────────────────────────────────
+  - name: github
+    engine: github
+    shortcut: gh
+    disabled: false
+    categories: it
+
+  - name: codeberg
+    engine: codeberg
+    shortcut: cb
+    disabled: false
+    categories: it
+
+  # ── Social / Forums ────────────────────────────────────────
+  - name: reddit
+    engine: reddit
+    shortcut: re
+    disabled: false
+    categories: social media
+
+  # ── Music ──────────────────────────────────────────────────
+  - name: bandcamp
+    engine: bandcamp
+    shortcut: bc
+    disabled: false
+    categories: music
+
+  - name: soundcloud
+    engine: soundcloud
+    shortcut: sc
+    disabled: false
+    categories: music
+
+  # ── Files / Books ──────────────────────────────────────────
+  - name: anna's archive
+    engine: annas_archive
+    shortcut: aa
+    disabled: false
+    categories: files
+
+  - name: library genesis
+    engine: library_genesis
+    shortcut: lg
+    disabled: false
+    categories: files
+
+  # ── Maps ───────────────────────────────────────────────────
+  - name: openstreetmap
+    engine: openstreetmap
+    shortcut: osm
+    disabled: false
+    categories: map
