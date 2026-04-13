@@ -26,7 +26,7 @@ It combines multiple privacy-respecting search providers (DuckDuckGo, Brave Sear
 
 **Google and Bing are intentionally disabled.** They log every query. That defeats the entire purpose.
 
-This is the search engine behind [Atlas Browser](https://github.com/intergalacticuser/atlas-browser). It also runs standalone at any domain you point it to.
+This is the search engine behind [Atlasiant Browser](https://github.com/intergalacticuser/atlasiant-browser). It also runs standalone at any domain you point it to.
 
 ## Architecture
 
@@ -161,5 +161,5 @@ MIT
 ---
 
 <p align="center">
-  <sub>Part of the <a href="https://github.com/intergalacticuser/atlas-browser">Atlas Browser</a> project</sub>
+  <sub>Part of the <a href="https://github.com/intergalacticuser/atlasiant-browser">Atlasiant Browser</a> project</sub>
 </p>
