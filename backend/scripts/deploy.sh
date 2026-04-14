@@ -32,18 +32,18 @@ docker compose -f "$COMPOSE_FILE" -p "$PROJECT" build
 
 # ── Start infrastructure first ───────────────────────────────────
 echo "[3/6] Starting PostgreSQL + OpenSearch..."
-docker compose -f "$COMPOSE_FILE" -p "$PROJECT" up -d postgres opensearch
+docker compose -f "$COMPOSE_FILE" -p "$PROJECT" up -d sa-postgres sa-opensearch
 
 # Wait for health
 echo "  Waiting for PostgreSQL..."
-until docker compose -f "$COMPOSE_FILE" -p "$PROJECT" exec -T postgres pg_isready -U search_angel 2>/dev/null; do
+until docker compose -f "$COMPOSE_FILE" -p "$PROJECT" exec -T sa-postgres pg_isready -U search_angel 2>/dev/null; do
     sleep 2
 done
 echo "  PostgreSQL ready"
 
 echo "  Waiting for OpenSearch..."
 for i in $(seq 1 30); do
-    if docker compose -f "$COMPOSE_FILE" -p "$PROJECT" exec -T opensearch curl -s http://localhost:9200 2>/dev/null | grep -q cluster_name; then
+    if docker compose -f "$COMPOSE_FILE" -p "$PROJECT" exec -T sa-opensearch curl -s http://localhost:9200 2>/dev/null | grep -q cluster_name; then
         break
     fi
     sleep 3

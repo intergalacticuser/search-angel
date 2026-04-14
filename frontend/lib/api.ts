@@ -5,18 +5,17 @@ import type {
   CategorySearchResponse,
   SearchCategory,
 } from "./types";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { buildApiUrl, getApiBaseUrl } from "./api-base";
 
 class SearchAngelAPI {
   private baseUrl: string;
 
-  constructor(baseUrl: string = API_URL) {
+  constructor(baseUrl: string = getApiBaseUrl()) {
     this.baseUrl = baseUrl;
   }
 
   async search(request: SearchRequest): Promise<SearchResponse> {
-    const res = await fetch(`${this.baseUrl}/api/v1/search`, {
+    const res = await fetch(this.url("/api/v1/search"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
@@ -34,7 +33,7 @@ class SearchAngelAPI {
     offset: number = 0,
     torMode: boolean = false
   ): Promise<CategorySearchResponse> {
-    const res = await fetch(`${this.baseUrl}/api/v1/search/category`, {
+    const res = await fetch(this.url("/api/v1/search/category"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query, category, limit, offset, tor_mode: torMode }),
@@ -46,7 +45,7 @@ class SearchAngelAPI {
   }
 
   async deepSearch(request: SearchRequest): Promise<SearchResponse> {
-    const res = await fetch(`${this.baseUrl}/api/v1/search/deep`, {
+    const res = await fetch(this.url("/api/v1/search/deep"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...request, mode: "deep" }),
@@ -58,7 +57,7 @@ class SearchAngelAPI {
   }
 
   async compare(query: string, perspectives: number = 3): Promise<CompareResponse> {
-    const res = await fetch(`${this.baseUrl}/api/v1/search/compare`, {
+    const res = await fetch(this.url("/api/v1/search/compare"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ query, perspectives }),
@@ -70,8 +69,15 @@ class SearchAngelAPI {
   }
 
   async health(): Promise<Record<string, unknown>> {
-    const res = await fetch(`${this.baseUrl}/api/v1/health`);
+    const res = await fetch(this.url("/api/v1/health"));
     return res.json();
+  }
+
+  private url(path: string): string {
+    if (this.baseUrl) {
+      return `${this.baseUrl}${path}`;
+    }
+    return buildApiUrl(path);
   }
 }
 

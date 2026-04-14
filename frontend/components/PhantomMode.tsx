@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { buildApiUrl } from "@/lib/api-base";
 
 interface PhantomSession {
   session_id: string;
@@ -30,7 +29,7 @@ export default function PhantomMode() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API}/api/v1/phantom/start`, {
+      const res = await fetch(buildApiUrl("/api/v1/phantom/start"), {
         method: "POST",
       });
       if (!res.ok) {
@@ -50,7 +49,7 @@ export default function PhantomMode() {
   const endPhantom = useCallback(async () => {
     if (!session) return;
     try {
-      await fetch(`${API}/api/v1/phantom/end/${session.session_id}`, {
+      await fetch(buildApiUrl(`/api/v1/phantom/end/${session.session_id}`), {
         method: "DELETE",
       });
     } catch {
